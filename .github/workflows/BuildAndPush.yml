@@ -2,6 +2,11 @@ name: Publish Docker
 on:
   release:
     types: [published]
+  permissions:
+    packages: write
+    actions: write
+    contents: write
+
 jobs:
   push_to_registry:
     name: Push Docker image to GitHub Packages
@@ -25,4 +30,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/jaycollett/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
+          tags: 
+            - ghcr.io/jaycollett/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
+            - ghcr.io/jaycollett/${{ github.event.repository.name }}:latest
