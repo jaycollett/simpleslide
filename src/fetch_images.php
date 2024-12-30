@@ -11,7 +11,7 @@ function getImageFiles($directory) {
         foreach ($files as $file) {
             $fileExtension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
             if (in_array($fileExtension, $supportedExtensions)) {
-                $imageFiles[] = $directory . '/' . $file;
+                $imageFiles[] = '/images/' . $file;
             }
         }
     }
