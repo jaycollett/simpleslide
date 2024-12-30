@@ -2,10 +2,6 @@ name: Publish Docker
 on:
   release:
     types: [published]
-  permissions:
-    packages: write
-    actions: write
-    contents: write
 
 jobs:
   push_to_registry:
