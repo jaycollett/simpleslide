@@ -1,6 +1,6 @@
 <?php
 // Get environment variables
-$pathToImages = getenv('pathtoimages') ?: './images';
+$pathToImages = "/var/www/html/images"
 
 // Function to load image files from a directory
 function getImageFiles($directory) {
