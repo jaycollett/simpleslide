@@ -1,6 +1,22 @@
 <?php
 // Get the delay value from the environment variable (default to 10 seconds if not set)
 $slideDelayInSeconds = getenv('delayinsecs') ?: 10;
+
+// Blackout logic
+$blackoutEnabled = true;
+$envBlackoutEnabled = getenv('BLACKOUT_ENABLED');
+if ($envBlackoutEnabled !== false) {
+    $blackoutEnabled = !in_array(strtolower($envBlackoutEnabled), ['0', 'false', 'off']);
+}
+$blackoutStart = getenv('BLACKOUT_START_HOUR') !== false ? (int)getenv('BLACKOUT_START_HOUR') : 22;
+$blackoutStop = getenv('BLACKOUT_STOP_HOUR') !== false ? (int)getenv('BLACKOUT_STOP_HOUR') : 7;
+$currentHour = (int)date('G');
+
+if ($blackoutStart < $blackoutStop) {
+    $inBlackout = ($currentHour >= $blackoutStart && $currentHour < $blackoutStop);
+} else {
+    $inBlackout = ($currentHour >= $blackoutStart || $currentHour < $blackoutStop);
+}
 ?>
 
 <!DOCTYPE html>
@@ -44,7 +60,12 @@ $slideDelayInSeconds = getenv('delayinsecs') ?: 10;
     <div id="slideshow-container"></div>
 
     <script>
+        // Set initial images array based on blackout
+        <?php if ($blackoutEnabled && $inBlackout): ?>
+        let images = ['/static/black.jpg'];
+        <?php else: ?>
         let images = [];
+        <?php endif; ?>
         let currentIndex = 0;
         // Use the PHP value from the environment variable for the delay
         const slideDelayInSeconds = <?php echo $slideDelayInSeconds; ?>;
@@ -52,15 +73,23 @@ $slideDelayInSeconds = getenv('delayinsecs') ?: 10;
 
         // Fetch the list of images from the server
         function fetchImages() {
+            <?php if ($blackoutEnabled && $inBlackout): ?>
+            // During blackout, always show only black.jpg
+            images = ['/static/black.jpg'];
+            currentIndex = 0;
+            updateSlideshow();
+            <?php else: ?>
             fetch('fetch_images.php')
                 .then(response => response.json())
                 .then(data => {
-                    images = data;
+                    // Ensure black.jpg is never included in the slideshow outside blackout
+                    images = data.filter(img => img !== '/static/black.jpg');
                     currentIndex = 0;
                     shuffleImages();
                     updateSlideshow();
                 })
                 .catch(error => console.error('Error fetching images:', error));
+            <?php endif; ?>
         }
 
         // Shuffle the images randomly
