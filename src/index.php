@@ -60,12 +60,18 @@ if ($blackoutStart < $blackoutStop) {
     <div id="slideshow-container"></div>
 
     <script>
-        // Set initial images array based on blackout
-        <?php if ($blackoutEnabled && $inBlackout): ?>
-        let images = ['/static/black.jpg'];
-        <?php else: ?>
+        // Set blackout state from PHP
+        const inBlackout = <?php echo $inBlackout ? 'true' : 'false'; ?>;
         let images = [];
-        <?php endif; ?>
+        let currentIndex = 0;
+        // Use the PHP value from the environment variable for the delay
+        const slideDelayInSeconds = <?php echo $slideDelayInSeconds; ?>;
+        const slideshowContainer = document.getElementById('slideshow-container');
+        // Auto-reload the page every slideDelayInSeconds during blackout to catch transition
+        if (inBlackout) {
+            setInterval(() => { window.location.reload(); }, slideDelayInSeconds * 1000);
+        }
+
         let currentIndex = 0;
         // Use the PHP value from the environment variable for the delay
         const slideDelayInSeconds = <?php echo $slideDelayInSeconds; ?>;
@@ -73,23 +79,15 @@ if ($blackoutStart < $blackoutStop) {
 
         // Fetch the list of images from the server
         function fetchImages() {
-            <?php if ($blackoutEnabled && $inBlackout): ?>
-            // During blackout, always show only black.jpg
-            images = ['/static/black.jpg'];
-            currentIndex = 0;
-            updateSlideshow();
-            <?php else: ?>
             fetch('fetch_images.php')
                 .then(response => response.json())
                 .then(data => {
-                    // Ensure black.jpg is never included in the slideshow outside blackout
                     images = data.filter(img => img !== '/static/black.jpg');
                     currentIndex = 0;
                     shuffleImages();
                     updateSlideshow();
                 })
                 .catch(error => console.error('Error fetching images:', error));
-            <?php endif; ?>
         }
 
         // Shuffle the images randomly
@@ -103,18 +101,26 @@ if ($blackoutStart < $blackoutStop) {
         function updateSlideshow() {
             // Clear existing images
             slideshowContainer.innerHTML = '';
-
-            // Add new images to the container
-            images.forEach((src, index) => {
+            if (inBlackout) {
+                // Show only black.jpg
                 const img = document.createElement('img');
-                img.src = src;
-                img.alt = 'Slideshow Image';
-                img.loading = 'lazy';
-                if (index === 0) img.classList.add('active'); // Show the first image
-                img.onload = () => resizeImage(img); // Resize the image after it loads
+                img.src = '/static/black.jpg';
+                img.alt = 'Blackout';
+                img.classList.add('active');
+                img.onload = () => resizeImage(img);
                 slideshowContainer.appendChild(img);
-            });
-
+            } else {
+                // Add new images to the container
+                images.forEach((src, index) => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.alt = 'Slideshow Image';
+                    img.loading = 'lazy';
+                    if (index === 0) img.classList.add('active'); // Show the first image
+                    img.onload = () => resizeImage(img); // Resize the image after it loads
+                    slideshowContainer.appendChild(img);
+                });
+            }
             // Add a resize listener to ensure images adapt to screen changes
             window.addEventListener('resize', resizeAllImages);
         }
@@ -140,9 +146,13 @@ if ($blackoutStart < $blackoutStop) {
         }
 
         function showNextImage() {
+            if (inBlackout) {
+                // Always show only black.jpg
+                updateSlideshow();
+                return;
+            }
             const imageElements = slideshowContainer.querySelectorAll('img');
             if (imageElements.length === 0) return;
-
             imageElements[currentIndex].classList.remove('active');
             currentIndex = (currentIndex + 1) % imageElements.length;
             imageElements[currentIndex].classList.add('active');
