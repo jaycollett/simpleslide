@@ -12,10 +12,27 @@ $blackoutStart = getenv('BLACKOUT_START_HOUR') !== false ? (int)getenv('BLACKOUT
 $blackoutStop = getenv('BLACKOUT_STOP_HOUR') !== false ? (int)getenv('BLACKOUT_STOP_HOUR') : 7;
 $currentHour = (int)date('G');
 
+// Debug information
+file_put_contents('/var/www/html/debug.log', date('Y-m-d H:i:s') . " Current Hour: $currentHour, Blackout Start: $blackoutStart, Blackout Stop: $blackoutStop\n", FILE_APPEND);
+
+// Fix the blackout logic
 if ($blackoutStart < $blackoutStop) {
+    // Simple case: blackout period doesn't cross midnight
     $inBlackout = ($currentHour >= $blackoutStart && $currentHour < $blackoutStop);
 } else {
+    // Complex case: blackout period crosses midnight
+    // This is the correct logic for when blackout period crosses midnight
+    // For example, if blackout is from 22 (10pm) to 7 (7am)
+    // Then we should be in blackout when currentHour >= 22 OR currentHour < 7
     $inBlackout = ($currentHour >= $blackoutStart || $currentHour < $blackoutStop);
+}
+
+file_put_contents('/var/www/html/debug.log', date('Y-m-d H:i:s') . " In Blackout: " . ($inBlackout ? 'true' : 'false') . "\n", FILE_APPEND);
+
+// Only apply blackout if enabled
+if (!$blackoutEnabled) {
+    $inBlackout = false;
+    file_put_contents('/var/www/html/debug.log', date('Y-m-d H:i:s') . " Blackout disabled by config\n", FILE_APPEND);
 }
 ?>
 
@@ -67,21 +84,23 @@ if ($blackoutStart < $blackoutStop) {
         // Use the PHP value from the environment variable for the delay
         const slideDelayInSeconds = <?php echo $slideDelayInSeconds; ?>;
         const slideshowContainer = document.getElementById('slideshow-container');
+        
         // Auto-reload the page every slideDelayInSeconds during blackout to catch transition
         if (inBlackout) {
+            console.log('In blackout mode. Current hour: ' + <?php echo $currentHour; ?>);
+            console.log('Blackout start: ' + <?php echo $blackoutStart; ?> + ', Blackout stop: ' + <?php echo $blackoutStop; ?>);
             setInterval(() => { window.location.reload(); }, slideDelayInSeconds * 1000);
+        } else {
+            console.log('Not in blackout mode. Current hour: ' + <?php echo $currentHour; ?>);
+            console.log('Blackout start: ' + <?php echo $blackoutStart; ?> + ', Blackout stop: ' + <?php echo $blackoutStop; ?>);
         }
-
-        let currentIndex = 0;
-        // Use the PHP value from the environment variable for the delay
-        const slideDelayInSeconds = <?php echo $slideDelayInSeconds; ?>;
-        const slideshowContainer = document.getElementById('slideshow-container');
 
         // Fetch the list of images from the server
         function fetchImages() {
             fetch('fetch_images.php')
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Fetched images:', data);
                     images = data.filter(img => img !== '/static/black.jpg');
                     currentIndex = 0;
                     shuffleImages();
