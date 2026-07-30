@@ -1,7 +1,7 @@
 # php:8.3-apache - current supported PHP branch (8.2 goes security-only Dec 2026).
 # Debian-based rather than alpine because there is no official php:*-apache
 # alpine variant; the app needs mod_php under Apache.
-FROM php:8.3-apache
+FROM php:8.5-apache
 
 # Pull the Debian package set up to current. The php:8.3-apache base ships 10
 # fixable Critical/High OS CVEs; this clears all of them (and ~190 findings
