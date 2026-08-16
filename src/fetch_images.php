@@ -1,4 +1,9 @@
 <?php
+// PHP does not inherit the container's TZ environment variable; date() defaults to UTC even
+// when the system clock is correct. Set it here too so any time-dependent logic in this
+// endpoint agrees with index.php rather than silently running on UTC.
+date_default_timezone_set(getenv('TZ') ?: 'UTC');
+
 // Get environment variables
 $pathToImages = "/var/www/html/images";
 

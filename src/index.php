@@ -1,4 +1,9 @@
 <?php
+// PHP does not inherit the container's TZ environment variable; date() defaults to UTC even
+// when the system clock is correct. Without this the blackout window is evaluated against UTC
+// hours, so a 21:00-07:00 window actually blacks the screen 17:00-03:00 in America/New_York.
+date_default_timezone_set(getenv('TZ') ?: 'UTC');
+
 // Get the delay value from the environment variable (default to 10 seconds if not set)
 $slideDelayInSeconds = getenv('delayinsecs') ?: 10;
 
